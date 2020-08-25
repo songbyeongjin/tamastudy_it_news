@@ -1,4 +1,4 @@
-package service
+package impl
 
 import (
 	"github.com/gocolly/colly"
@@ -6,14 +6,21 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"tamastudy_news_crawler/crawl/model"
+	"tamastudy_news_crawler/common"
+	"tamastudy_news_crawler/domain/model"
+	"tamastudy_news_crawler/domain/repository_interface"
+	"tamastudy_news_crawler/service"
 	"time"
 )
 
 const (
 	naverNewsPrefixUrl      = "news.naver.com/"
 	itScienceSection        = "105"
-	naverNewsRootUrl        = httpsUrl + naverNewsPrefixUrl + `main/ranking/popularDay.nhn?rankingType=popular_day&sectionId=` + itScienceSection
+	naverNewsRootUrl        =
+		common.HttpsUrl +
+			naverNewsPrefixUrl +
+		`main/ranking/popularDay.nhn?rankingType=popular_day&sectionId=` +
+			itScienceSection
 	naverCssSelectorUrl     = ".ranking_list li .ranking_headline a"
 	naverCssSelectorTitle   = "#articleTitle"
 	naverCssSelectorContent = "#articleBodyContents"
@@ -22,10 +29,18 @@ const (
 	deleteString            = "// flash 오류를 우회하기 위한 함수 추가 function _flash_removeCallback() {} "
 )
 
-type NaverCrawler struct {
+type NaverCrawlerService struct {
+	newsRepository repository_interface.INewsRepository
+	portal string
 }
 
-func (crawler NaverCrawler) CrawlAndSave() error{
+func NewNaverCrawlerService(newsRepository repository_interface.INewsRepository) service.ICrawlerService {
+	naverCrawlerService := NaverCrawlerService{newsRepository: newsRepository, portal : "naver"}
+
+	return naverCrawlerService
+}
+
+func (crawler NaverCrawlerService) CrawlAndSave() error{
 	news := crawler.Crawl()
 	if err := crawler.Save(news); err != nil{
 		return err
@@ -34,16 +49,22 @@ func (crawler NaverCrawler) CrawlAndSave() error{
 	return nil
 }
 
-func (crawler NaverCrawler) Crawl() []*model.News{
+func (crawler NaverCrawlerService) Crawl() []*model.News {
 	naverNewsUrls := crawler.GetNewsUrls(naverNewsRootUrl)
 	naverNews := crawler.GetNews(naverNewsUrls)
 
 	return naverNews
 }
 
-func (crawler NaverCrawler) Save(news []*model.News) error{
+func (crawler NaverCrawlerService) Save(news []*model.News) error{
+	/*
 	fileName := `\naver.txt`
-	if err := NewsSave(news, fileName); err != nil{
+	//if err := common.NewsSave(news, fileName); err != nil{
+		return err
+	}
+	 */
+
+	if err := crawler.newsRepository.DeleteAllByPortalAndAllCreate(crawler.portal, news); err != nil{
 		return err
 	}
 
@@ -51,16 +72,16 @@ func (crawler NaverCrawler) Save(news []*model.News) error{
 }
 
 //get Naver News url From nate root url
-func (crawler NaverCrawler) GetNewsUrls(rootUrl string) []string {
-	urls := make([]string, 0, NewsCount)
+func (crawler NaverCrawlerService) GetNewsUrls(rootUrl string) []string {
+	urls := make([]string, 0, common.NewsCount)
 	c := colly.NewCollector()
 	var wg sync.WaitGroup
-	wg.Add(NewsCount)
+	wg.Add(common.NewsCount)
 
 	// Find and visit all links
 	c.OnHTML(naverCssSelectorUrl, func(e *colly.HTMLElement) {
-		if len(urls) < NewsCount {
-			url := e.Attr(Href)
+		if len(urls) < common.NewsCount {
+			url := e.Attr(common.Href)
 			urls = append(urls, naverNewsPrefixUrl+url)
 			wg.Done()
 		}
@@ -77,18 +98,20 @@ func (crawler NaverCrawler) GetNewsUrls(rootUrl string) []string {
 }
 
 //get Naver News Object from naver urls
-func (crawler NaverCrawler) GetNews(newsUrls []string) []*model.News {
-	naverNews := make([]*model.News, NewsCount, NewsCount)
+func (crawler NaverCrawlerService) GetNews(newsUrls []string) []*model.News {
+	naverNews := make([]*model.News, common.NewsCount, common.NewsCount)
 	for i := 0; i < len(naverNews); i++ {
 		naverNews[i] = &model.News{}
 	}
 
-	cSlice := make([]*colly.Collector, NewsCount, NewsCount)
+	cSlice := make([]*colly.Collector, common.NewsCount, common.NewsCount)
 	dateDuplicateCheck := make([]bool, 10)
 	var wg sync.WaitGroup
+	wg.Add(common.NewsCount * 4) //4 = field number in colly call back func(title, content, press, date)
+
 
 	//Set callback
-	for i := 0; i < NewsCount; i++ {
+	for i := 0; i < common.NewsCount; i++ {
 		inIndex := i
 		cSlice[i] = colly.NewCollector()
 		cSlice[i].OnHTML(naverCssSelectorTitle, func(e *colly.HTMLElement) {
@@ -106,10 +129,7 @@ func (crawler NaverCrawler) GetNews(newsUrls []string) []*model.News {
 			startIndex := index + len(deleteString)
 			str2 := str[startIndex:]
 
-			if -1 != strings.Index(str2, "moveCall") {
-			}
-
-			naverNews[inIndex].Content = MinimizeContent(str2, 200)
+			naverNews[inIndex].Content = common.MinimizeContent(str2, 200)
 
 			wg.Done()
 		})
@@ -128,7 +148,7 @@ func (crawler NaverCrawler) GetNews(newsUrls []string) []*model.News {
 
 			dateString := e.Text[:10]
 			replacedDateString := strings.ReplaceAll(dateString, ".", "-")
-			naverNews[inIndex].Date, _ = time.Parse(layoutYYYYMMDD, replacedDateString)
+			naverNews[inIndex].Date, _ = time.Parse(common.LayoutYYYYMMDD, replacedDateString)
 
 			wg.Done()
 		})
@@ -140,9 +160,8 @@ func (crawler NaverCrawler) GetNews(newsUrls []string) []*model.News {
 		inUrl := url
 		inIndex := i
 
-		wg.Add(1 * 4) //4 = field number in colly call back func(title, content, press, date)
 		go func(c *colly.Collector) {
-			err := c.Visit(httpsUrl + inUrl)
+			err := c.Visit(common.HttpsUrl + inUrl)
 			if err != nil{
 				log.Fatal(err)
 			}

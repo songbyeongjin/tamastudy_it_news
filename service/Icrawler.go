@@ -1,9 +1,9 @@
 package service
 
 import (
-	"tamastudy_news_crawler/crawl/model"
+	"tamastudy_news_crawler/domain/model"
 )
-type Crawler interface {
+type ICrawlerService interface {
 	CrawlAndSave() error
 	Crawl() []*model.News
 	Save([]*model.News) error

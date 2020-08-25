@@ -1,17 +1,17 @@
-package service
+package common
 
 import (
 	"encoding/json"
 	"os"
-	"tamastudy_news_crawler/crawl/model"
+	"tamastudy_news_crawler/domain/model"
 	"unicode/utf8"
 )
 
 const (
-	NewsCount              = 10
-	layoutYYYYMMDD         = "2006-01-02"
-	httpsUrl               = `https://`
-	Href				   = "href"
+	NewsCount      = 10
+	LayoutYYYYMMDD = "2006-01-02"
+	HttpsUrl       = `https://`
+	Href           = "href"
 )
 
 func MinimizeContent(original string, limit int) string {
