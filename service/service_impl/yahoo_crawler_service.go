@@ -1,4 +1,4 @@
-package impl
+package service_impl
 
 import (
 	"github.com/gocolly/colly"
@@ -8,7 +8,7 @@ import (
 	"tamastudy_news_crawler/common"
 	"tamastudy_news_crawler/domain/model"
 	"tamastudy_news_crawler/domain/repository_interface"
-	"tamastudy_news_crawler/service"
+	"tamastudy_news_crawler/service/service_interface"
 	"time"
 )
 
@@ -22,16 +22,15 @@ const (
 	yahooCssSelectorSecondUrlPress     = ".pickupMain_articleInfo"
 )
 
-var essayCounter int = 0
+var essayCounter = 0
 
-
-type YahooCrawlerService struct {
+type yahooCrawlerService struct {
 	newsRepository repository_interface.INewsRepository
 	portal string
 }
 
-func NewYahooCrawlerService(newsRepository repository_interface.INewsRepository) service.ICrawlerService {
-	yahooCrawlerService := YahooCrawlerService{
+func NewYahooCrawlerService(newsRepository repository_interface.INewsRepository) service_interface.ICrawlerService {
+	yahooCrawlerService := yahooCrawlerService{
 		newsRepository: newsRepository,
 		portal : "yahoo"}
 
@@ -39,7 +38,7 @@ func NewYahooCrawlerService(newsRepository repository_interface.INewsRepository)
 }
 
 
-func (crawler YahooCrawlerService) CrawlAndSave() error{
+func (crawler yahooCrawlerService) CrawlAndSave() error{
 	news := crawler.Crawl()
 	if err := crawler.Save(news); err != nil{
 		return err
@@ -48,7 +47,7 @@ func (crawler YahooCrawlerService) CrawlAndSave() error{
 	return nil
 }
 
-func (crawler YahooCrawlerService) Crawl() []*model.News {
+func (crawler yahooCrawlerService) Crawl() []*model.News {
 	firstUrls  := crawler.GetFirstNewsUrls(yahooNewsRootUrl)
 	secondUrls, press := crawler.GetSecondNewsUrlsAndPress(firstUrls)
 	news := crawler.GetNews(secondUrls, press)
@@ -56,7 +55,7 @@ func (crawler YahooCrawlerService) Crawl() []*model.News {
 	return news
 }
 
-func (crawler YahooCrawlerService) Save(news []*model.News) error{
+func (crawler yahooCrawlerService) Save(news []*model.News) error{
 	if err := crawler.newsRepository.DeleteAllByPortalAndAllCreate(crawler.portal, news); err != nil{
 		return err
 	}
@@ -65,7 +64,7 @@ func (crawler YahooCrawlerService) Save(news []*model.News) error{
 }
 
 //get Naver News url From nate root url
-func (crawler YahooCrawlerService) GetFirstNewsUrls(rootUrl string) []string {
+func (crawler yahooCrawlerService) GetFirstNewsUrls(rootUrl string) []string {
 	urls := make([]string, 0, common.NewsCount)
 	c := colly.NewCollector()
 	var wg sync.WaitGroup
@@ -90,12 +89,11 @@ func (crawler YahooCrawlerService) GetFirstNewsUrls(rootUrl string) []string {
 	return urls
 }
 
-func (crawler YahooCrawlerService) GetSecondNewsUrlsAndPress(firstUrls []string) ([]string, []string){
+func (crawler yahooCrawlerService) GetSecondNewsUrlsAndPress(firstUrls []string) ([]string, []string){
 	urls := make([]string, common.NewsCount, common.NewsCount)
 	press := make([]string, common.NewsCount, common.NewsCount)
 	cSlice := make([]*colly.Collector, common.NewsCount, common.NewsCount)
 	var wg sync.WaitGroup
-	//wg.Add(common.NewsCount * 2) //2 ==field count(url, press)
 	wg.Add(common.NewsCount * 1)
 
 	for i := 0; i < common.NewsCount; i++ {
@@ -109,6 +107,8 @@ func (crawler YahooCrawlerService) GetSecondNewsUrlsAndPress(firstUrls []string)
 				url := e.ChildAttr(" a", "href")
 				urls[inIndex] = url
 				press[inIndex] = p
+
+
 			}else{
 				//sometime news don't have press then that news item is essay
 				press[inIndex] = "*"
@@ -132,11 +132,12 @@ func (crawler YahooCrawlerService) GetSecondNewsUrlsAndPress(firstUrls []string)
 
 	wg.Wait()
 
+	//delete item that not found press(=essay item)
 	for i, url := range urls{
 		if url == "*" {
 			urls = append(urls[0:i], urls[i+1:]...)
+			press = append(press[0:i], press[i+1:]...)
 		}
-
 	}
 
 	return urls, press
@@ -144,7 +145,7 @@ func (crawler YahooCrawlerService) GetSecondNewsUrlsAndPress(firstUrls []string)
 
 
 //get Yahoo News Object from Yahoo urls
-func (crawler YahooCrawlerService) GetNews(newsUrls []string, newsPress []string) []*model.News {
+func (crawler yahooCrawlerService) GetNews(newsUrls []string, newsPress []string) []*model.News {
 	newsCount := len(newsUrls)
 	yahooNews := make([]*model.News, newsCount, newsCount)
 	for i := 0; i < newsCount; i++ {

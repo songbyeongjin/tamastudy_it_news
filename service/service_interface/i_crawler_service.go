@@ -1,4 +1,4 @@
-package service
+package service_interface
 
 import (
 	"tamastudy_news_crawler/domain/model"

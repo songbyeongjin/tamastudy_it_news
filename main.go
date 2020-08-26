@@ -5,8 +5,8 @@ import (
 	"sync"
 	"tamastudy_news_crawler/db"
 	"tamastudy_news_crawler/db/repository_impl"
-	"tamastudy_news_crawler/service"
-	"tamastudy_news_crawler/service/impl"
+	"tamastudy_news_crawler/service/service_impl"
+	"tamastudy_news_crawler/service/service_interface"
 )
 
 func main()  {
@@ -27,16 +27,16 @@ func main()  {
 	wg.Wait()
 }
 
-func getCrawler() []service.ICrawlerService{
+func getCrawler() []service_interface.ICrawlerService {
 	// *** DI
 	mysqlDb := db.NewDbHandler()
 
 	newsRepository := repository_impl.NewNewsRepository(mysqlDb)
 
-	naverCrawlerService := impl.NewNaverCrawlerService(newsRepository)
-	yahooCrawlerService := impl.NewYahooCrawlerService(newsRepository)
+	naverCrawlerService := service_impl.NewNaverCrawlerService(newsRepository)
+	yahooCrawlerService := service_impl.NewYahooCrawlerService(newsRepository)
 
-	crawlersService := []service.ICrawlerService{
+	crawlersService := []service_interface.ICrawlerService{
 		naverCrawlerService,
 		yahooCrawlerService,
 	}

@@ -6,30 +6,30 @@ import (
 	"tamastudy_news_crawler/domain/repository_interface"
 )
 
-type NewsRepository struct {
+type newsRepository struct {
 	dbHandler *db.Handler
 }
 
 func NewNewsRepository(dbHandler *db.Handler) repository_interface.INewsRepository {
-	newsRepository := NewsRepository{dbHandler}
-	return &newsRepository
+	newsRepository := newsRepository{dbHandler}
+	return newsRepository
 }
 
-func (n *NewsRepository) DeleteAllByPortal(portal string) error{
+func (n newsRepository) DeleteAllByPortal(portal string) error{
 	if err := n.dbHandler.Conn.Where("portal = ?", portal).Delete(model.News{}).Error; err != nil{
 		return err
 	}
 	return nil
 }
 
-func (n *NewsRepository) Create(news *model.News)  error{
+func (n newsRepository) Create(news *model.News)  error{
 	if err := n.dbHandler.Conn.Create(news).Error; err != nil{
 		return err
 	}
 	return nil
 }
 
-func (n *NewsRepository) DeleteAllByPortalAndAllCreate(portal string, news []*model.News)  error{
+func (n newsRepository) DeleteAllByPortalAndAllCreate(portal string, news []*model.News)  error{
 	tx := n.dbHandler.Conn.Begin()
 
 	if err := n.DeleteAllByPortal(portal); err != nil{

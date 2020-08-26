@@ -1,4 +1,4 @@
-package impl
+package service_impl
 
 import (
 	"github.com/gocolly/colly"
@@ -9,7 +9,7 @@ import (
 	"tamastudy_news_crawler/common"
 	"tamastudy_news_crawler/domain/model"
 	"tamastudy_news_crawler/domain/repository_interface"
-	"tamastudy_news_crawler/service"
+	"tamastudy_news_crawler/service/service_interface"
 	"time"
 )
 
@@ -29,18 +29,18 @@ const (
 	deleteString            = "// flash 오류를 우회하기 위한 함수 추가 function _flash_removeCallback() {} "
 )
 
-type NaverCrawlerService struct {
+type naverCrawlerService struct {
 	newsRepository repository_interface.INewsRepository
 	portal string
 }
 
-func NewNaverCrawlerService(newsRepository repository_interface.INewsRepository) service.ICrawlerService {
-	naverCrawlerService := NaverCrawlerService{newsRepository: newsRepository, portal : "naver"}
+func NewNaverCrawlerService(newsRepository repository_interface.INewsRepository) service_interface.ICrawlerService {
+	naverCrawlerService := naverCrawlerService{newsRepository: newsRepository, portal : "naver"}
 
 	return naverCrawlerService
 }
 
-func (crawler NaverCrawlerService) CrawlAndSave() error{
+func (crawler naverCrawlerService) CrawlAndSave() error{
 	news := crawler.Crawl()
 	if err := crawler.Save(news); err != nil{
 		return err
@@ -49,14 +49,14 @@ func (crawler NaverCrawlerService) CrawlAndSave() error{
 	return nil
 }
 
-func (crawler NaverCrawlerService) Crawl() []*model.News {
+func (crawler naverCrawlerService) Crawl() []*model.News {
 	naverNewsUrls := crawler.GetNewsUrls(naverNewsRootUrl)
 	naverNews := crawler.GetNews(naverNewsUrls)
 
 	return naverNews
 }
 
-func (crawler NaverCrawlerService) Save(news []*model.News) error{
+func (crawler naverCrawlerService) Save(news []*model.News) error{
 	/*
 	fileName := `\naver.txt`
 	//if err := common.NewsSave(news, fileName); err != nil{
@@ -72,7 +72,7 @@ func (crawler NaverCrawlerService) Save(news []*model.News) error{
 }
 
 //get Naver News url From nate root url
-func (crawler NaverCrawlerService) GetNewsUrls(rootUrl string) []string {
+func (crawler naverCrawlerService) GetNewsUrls(rootUrl string) []string {
 	urls := make([]string, 0, common.NewsCount)
 	c := colly.NewCollector()
 	var wg sync.WaitGroup
@@ -98,7 +98,7 @@ func (crawler NaverCrawlerService) GetNewsUrls(rootUrl string) []string {
 }
 
 //get Naver News Object from naver urls
-func (crawler NaverCrawlerService) GetNews(newsUrls []string) []*model.News {
+func (crawler naverCrawlerService) GetNews(newsUrls []string) []*model.News {
 	naverNews := make([]*model.News, common.NewsCount, common.NewsCount)
 	for i := 0; i < len(naverNews); i++ {
 		naverNews[i] = &model.News{}
