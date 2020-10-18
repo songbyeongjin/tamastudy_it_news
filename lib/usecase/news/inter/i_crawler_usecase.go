@@ -1,7 +1,7 @@
-package service_interface
+package inter
 
 import (
-	"tamastudy_news_crawler/domain/model"
+	"tamastudy_news_crawler/lib/entity/model"
 )
 type ICrawlerService interface {
 	CrawlAndSave() error

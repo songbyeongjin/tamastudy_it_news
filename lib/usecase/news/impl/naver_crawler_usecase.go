@@ -1,4 +1,4 @@
-package service_impl
+package impl
 
 import (
 	"github.com/gocolly/colly"
@@ -6,10 +6,10 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"tamastudy_news_crawler/common"
-	"tamastudy_news_crawler/domain/model"
-	"tamastudy_news_crawler/domain/repository_interface"
-	"tamastudy_news_crawler/service/service_interface"
+	"tamastudy_news_crawler/lib/common"
+	"tamastudy_news_crawler/lib/entity/model"
+	"tamastudy_news_crawler/lib/entity/repository_inter"
+	"tamastudy_news_crawler/lib/usecase/news/inter"
 	"time"
 )
 
@@ -30,11 +30,11 @@ const (
 )
 
 type naverCrawlerService struct {
-	newsRepository repository_interface.INewsRepository
-	portal string
+	newsRepository repository_inter.INewsRepository
+	portal         string
 }
 
-func NewNaverCrawlerService(newsRepository repository_interface.INewsRepository) service_interface.ICrawlerService {
+func NewNaverCrawlerService(newsRepository repository_inter.INewsRepository) inter.ICrawlerService {
 	naverCrawlerService := naverCrawlerService{newsRepository: newsRepository, portal : "naver"}
 
 	return naverCrawlerService
@@ -157,6 +157,7 @@ func (crawler naverCrawlerService) GetNews(newsUrls []string) []*model.News {
 	for i, url := range newsUrls {
 		naverNews[i].Url = url
 		naverNews[i].Portal = "naver"
+		naverNews[i].CountryCode = model.KoreaCode
 		inUrl := url
 		inIndex := i
 

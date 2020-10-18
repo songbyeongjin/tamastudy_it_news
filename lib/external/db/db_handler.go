@@ -25,7 +25,7 @@ func (d *Connector) GetConnectString() string {
 //Set Db information from yaml
 func getDbConnector() (*Connector, error) {
 	//temporary path for debug mode
-	buf, err := ioutil.ReadFile(`C:\Users\SONG\Documents\study\go\src\tamastudy_news_crawler/db_info.yaml`)
+	buf, err := ioutil.ReadFile("../../lib/external/db/db_info.yaml")
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -48,22 +48,22 @@ type Handler struct {
 	Conn *gorm.DB
 }
 
-func NewDbHandler() *Handler {
+func NewDbHandler() (*Handler, error) {
 	dbHandler := &Handler{}
 	DbConnector, err := getDbConnector()
 
 	if err != nil{
 		log.Print(err)
-		return nil
+		return nil, err
 	}
 	dbHandler.Conn, err = gorm.Open(DbConnector.Dialect, DbConnector.GetConnectString())
 
 	if err != nil{
 		log.Print(err)
-		return nil
+		return nil, err
 	}
 
-	return dbHandler
+	return dbHandler, nil
 }
 
 func NewTestDbHandler() *Handler {

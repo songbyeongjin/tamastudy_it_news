@@ -1,7 +1,7 @@
-package repository_interface
+package repository_inter
 
 import(
-	"tamastudy_news_crawler/domain/model"
+	"tamastudy_news_crawler/lib/entity/model"
 )
 type INewsRepository interface {
 	DeleteAllByPortal(portal string) error

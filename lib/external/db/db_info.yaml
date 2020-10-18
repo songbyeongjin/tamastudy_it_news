@@ -1,0 +1,6 @@
+dialect: mysql
+host: devfactory.fun
+db_name: tamastudy
+port: 33333
+user: root
+password: example

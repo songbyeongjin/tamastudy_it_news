@@ -1,35 +1,34 @@
-package service_impl
+package impl
 
 import (
 	"github.com/gocolly/colly"
 	"log"
 	"regexp"
 	"sync"
-	"tamastudy_news_crawler/common"
-	"tamastudy_news_crawler/domain/model"
-	"tamastudy_news_crawler/domain/repository_interface"
-	"tamastudy_news_crawler/service/service_interface"
+	"tamastudy_news_crawler/lib/common"
+	"tamastudy_news_crawler/lib/entity/model"
+	"tamastudy_news_crawler/lib/entity/repository_inter"
+	"tamastudy_news_crawler/lib/usecase/news/inter"
 	"time"
 )
 
 const (
 	yahooNewsRootUrl         = common.HttpsUrl + `news.yahoo.co.jp/topics/it`
 	yahooCssSelectorFirstUrl = ".newsFeed_item_link"
-	yahooCssSelectorTitle    = ".sc-eXEjpC"
+	yahooCssSelectorTitle    = ".sc-epnACN"
 	yahooCssSelectorContent  = ".article_body"
 	yahooCssSelectorPress    = ".pickupMain_media"
-	yahooCssSelectorDate     = ".sc-bwCtUz time"
 	yahooCssSelectorSecondUrlPress     = ".pickupMain_articleInfo"
 )
 
 var essayCounter = 0
 
 type yahooCrawlerService struct {
-	newsRepository repository_interface.INewsRepository
-	portal string
+	newsRepository repository_inter.INewsRepository
+	portal         string
 }
 
-func NewYahooCrawlerService(newsRepository repository_interface.INewsRepository) service_interface.ICrawlerService {
+func NewYahooCrawlerService(newsRepository repository_inter.INewsRepository) inter.ICrawlerService {
 	yahooCrawlerService := yahooCrawlerService{
 		newsRepository: newsRepository,
 		portal : "yahoo"}
@@ -154,7 +153,7 @@ func (crawler yahooCrawlerService) GetNews(newsUrls []string, newsPress []string
 
 	cSlice := make([]*colly.Collector, newsCount, newsCount)
 	var wg sync.WaitGroup
-	wg.Add( newsCount * 3)//3 = field number in colly call back func(title, content, date)
+	wg.Add( newsCount * 2)//3 = field number in colly call back func(title, content)
 
 	//Set callback
 	for i := 0; i < newsCount; i++ {
@@ -163,7 +162,6 @@ func (crawler yahooCrawlerService) GetNews(newsUrls []string, newsPress []string
 
 		cSlice[i].OnHTML(yahooCssSelectorTitle, func(e *colly.HTMLElement) {
 			yahooNews[inIndex].Title = e.Text
-
 			wg.Done()
 		})
 
@@ -173,15 +171,6 @@ func (crawler yahooCrawlerService) GetNews(newsUrls []string, newsPress []string
 			trimmedContent := space.ReplaceAllString(content, " ")
 
 			yahooNews[inIndex].Content = common.MinimizeContent(trimmedContent, 200)
-
-			wg.Done()
-		})
-
-		cSlice[i].OnHTML(yahooCssSelectorDate, func(e *colly.HTMLElement) {
-			now := time.Now()
-			now.Format(common.LayoutYYYYMMDD)
-			yahooNews[inIndex].Date = now
-
 			wg.Done()
 		})
 	}
@@ -190,6 +179,8 @@ func (crawler yahooCrawlerService) GetNews(newsUrls []string, newsPress []string
 		yahooNews[i].Url = newsUrls[i]
 		yahooNews[i].Portal = "yahoo"
 		yahooNews[i].Press = newsPress[i]
+		yahooNews[i].CountryCode = model.JapanCode
+		yahooNews[i].Date = time.Now()
 
 		inUrl := newsUrls[i]
 		inIndex := i

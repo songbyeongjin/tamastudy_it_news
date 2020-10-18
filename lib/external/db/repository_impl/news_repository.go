@@ -1,16 +1,16 @@
 package repository_impl
 
 import (
-	"tamastudy_news_crawler/db"
-	"tamastudy_news_crawler/domain/model"
-	"tamastudy_news_crawler/domain/repository_interface"
+	"tamastudy_news_crawler/lib/entity/model"
+	"tamastudy_news_crawler/lib/entity/repository_inter"
+	"tamastudy_news_crawler/lib/external/db"
 )
 
 type newsRepository struct {
 	dbHandler *db.Handler
 }
 
-func NewNewsRepository(dbHandler *db.Handler) repository_interface.INewsRepository {
+func NewNewsRepository(dbHandler *db.Handler) repository_inter.INewsRepository {
 	newsRepository := newsRepository{dbHandler}
 	return newsRepository
 }
