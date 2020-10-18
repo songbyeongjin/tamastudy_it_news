@@ -6,6 +6,6 @@ import (
 
 type ICrawlerService interface {
 	CrawlAndSave() error
-	Crawl() []*model.News
-	Save([]*model.News) error
+	Crawl() ([]*model.Employment, error)
+	Save([]*model.Employment) error
 }
